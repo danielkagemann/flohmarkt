@@ -10,6 +10,8 @@ it just displays as much data from kleinanzeigen as possible.
 you can use the input field for reducing list.
 web application supports light and darkmode.
 
+![animated](flohmarkt.gif)
+
 ### how to run
 
 ```bash
