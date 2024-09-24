@@ -1,4 +1,11 @@
 
+export interface ArticleModel {
+    title: string,
+    description: string,
+    price: string,
+    image: string
+}
+
 function ArticleListItem ({item}: any) {
     const url = `url(${item.image})`;
     return (
@@ -7,8 +14,8 @@ function ArticleListItem ({item}: any) {
                 <div className="price">{item.price}</div>
             </div>
             <div>
-            <div className="title">{item.title}</div>
-            <div className="description">{item.description}</div>
+            <div className="title" dangerouslySetInnerHTML={{__html: item.title}}/>
+            <div className="description" dangerouslySetInnerHTML={{__html: item.description}}/>
             </div>
         </div>
     )

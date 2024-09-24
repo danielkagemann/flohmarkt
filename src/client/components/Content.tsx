@@ -1,10 +1,13 @@
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {useQuery} from "@tanstack/react-query";
-import ArticleListItem from "./ArticleListItem";
+import ArticleListItem, {ArticleModel} from "./ArticleListItem";
+import {$Parser} from "../parser/Parser";
+
 
 function Content() {
     // states
     const [term, setTerm] = useState<string>('');
+    const [filtered, setFiltered] = useState<ArticleModel[]>([]);
 
     // query
     const query = useQuery({
@@ -18,8 +21,36 @@ function Content() {
         },
     });
 
+    useEffect(() => {
+        setFiltered(query.data ?? [])
+    }, [query.data]);
+
     function updateTerm(event: any) {
-        setTerm(event.target.value);
+        const {value} = event.target;
+        setTerm(value);
+
+        // tokenize
+        const res = $Parser.init(value);
+        let tmp: ArticleModel[] = [...query.data ?? []];
+        if (res.ignoreList.length > 0) {
+            tmp = query.data.filter((element: any) => {
+                return !res.ignoreList.some((key: string) => element.title.toLowerCase().indexOf(key) !== -1);
+            });
+        }
+
+        if (res.highlight.length > 0) {
+            tmp = tmp.map((element: ArticleModel) => {
+                const re = new RegExp(`(${res.highlight.join('|')})`, 'gi');
+                return {
+                    title: element.title.replace(re, '<mark>$1</mark>'),
+                    description: element.description.replace(re, '<mark>$1</mark>'),
+                    image: element.image,
+                    price: element.price
+                };
+            });
+        }
+
+        setFiltered(tmp);
     }
 
     function renderContent () {
@@ -37,11 +68,11 @@ function Content() {
 
         return (
             <>
-                <h3>suchergebnisse ({query.data?.length})</h3>
+                <h3>Suchergebnisse ({filtered.length})</h3>
                 <div className="scrollcontainer">
-                {
-                    query.data.map((item: any) => (<ArticleListItem item={item} />))
-                }
+                    {
+                        filtered.map((item: any) => (<ArticleListItem key={item.title+item.price} item={item} />))
+                    }
                 </div>
             </>
         );
@@ -49,7 +80,8 @@ function Content() {
 
     return (
         <div className="content">
-            <input type="text" aria-label="Begriffe ausschließen" placeholder={"Begriffe ausschießen..."} value={term} onChange={updateTerm} />
+            <input type="text" aria-label="Begriffe ausschließen" placeholder={'Suchen... z.B. -"auto,roller" +"bett"'} value={term} onChange={updateTerm} />
+            <p className="description"><strong>Syntax:</strong> Wenn Du Begriffe ausschließen möchtest dann schreibe <code>-"begriff1,begriff2,..."</code>. Möchtest Du Begriffe hervorheben dann schreibe <code>+"begriff1,begriff2,..."</code>. Du kannst beide Varianten auch kombinieren.</p>
             {renderContent()}
         </div>
     )
